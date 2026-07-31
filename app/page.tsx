@@ -6,235 +6,16 @@ import {
   Clock, Globe, Check, Copy, ExternalLink, Flame, Layers, Activity, X, 
   CreditCard, MessageCircle, TrendingUp, Cpu, Tv, HelpCircle, ChevronUp, ChevronDown, Palette
 } from 'lucide-react';
-
-const getDemoDefaultState = () => {
-  const now = Math.floor(Date.now() / 1000);
-  return {
-    chat_id: 88410203,
-    tg_username: "zooma_demo_user",
-    subscription_tier: "VIP Premium",
-    subscription_paused: false,
-    subscription_until_ts: now + 30 * 24 * 3600,
-    subscription_frozen_left_sec: 0,
-    timezone_valid: true,
-    timezone_name: "Europe/Moscow",
-    proxy_set: true,
-    effective_ping_ms: 42.5,
-    effective_ping_source: "server",
-    promo_activated_count: 127,
-    promo_activated_total_amount: 14250.00,
-    promo_month_label: "Июль 2026",
-    promo_month_total_amount: 4250.00,
-    active_account_id: "acc_1",
-    accounts: [
-      {
-        account_id: "acc_1",
-        slot: 1,
-        port_user_id: "884102",
-        port_user_name: "Иван Смирнов",
-        auth_status: "подключен",
-        promo_activation_mode: "server",
-        promo_activation_paused: false,
-        subscription_paused: false,
-        subscription_until_ts: now + 30 * 24 * 3600,
-        subscription_frozen_left_sec: 0,
-        effective_ping_ms: 38.2,
-        effective_ping_source: "server",
-        proxy_ip: "185.22.174.11",
-        proxy_port_socks5: "1080",
-        proxy_login: "zooma_proxy",
-        proxy_password: "securepassword"
-      },
-      {
-        account_id: "acc_2",
-        slot: 2,
-        port_user_id: "993012",
-        port_user_name: "Анна Кузнецова",
-        auth_status: "подключен",
-        promo_activation_mode: "extension",
-        promo_activation_paused: true,
-        subscription_paused: false,
-        subscription_until_ts: now + 15 * 24 * 3600,
-        subscription_frozen_left_sec: 0,
-        effective_ping_ms: 52.4,
-        effective_ping_source: "extension",
-        proxy_ip: "185.22.174.12",
-        proxy_port_socks5: "1080",
-        proxy_login: "zooma_proxy",
-        proxy_password: "securepassword"
-      }
-    ],
-    tariffs: [
-      {
-        tariff_id: "main_30",
-        label: "Основной 30 дней",
-        price_rub: 450,
-        price_usdt: 5.0,
-        duration_days: 30,
-        is_addon: false
-      },
-      {
-        tariff_id: "main_90",
-        label: "Основной 90 дней",
-        price_rub: 1200,
-        price_usdt: 13.5,
-        duration_days: 90,
-        is_addon: false
-      }
-    ],
-    addon_config: {
-      main_active: true,
-      message: "",
-      tariffs_addon: [
-        {
-          key: "addon_30",
-          label: "Слот 30 дней",
-          price_rub: 250,
-          price_usdt: 2.8,
-          duration_days: 30
-        },
-        {
-          key: "addon_90",
-          label: "Слот 90 дней",
-          price_rub: 650,
-          price_usdt: 7.2,
-          duration_days: 90
-        }
-      ],
-      accounts: [
-        {
-          account_id: "acc_3",
-          port_user_name: "Свободный слот #3"
-        }
-      ]
-    },
-    pending_invoice: null
-  };
-};
-
-const handleDemoApiCall = (state: any, path: string, method: string, body: any) => {
-  const currentState = state || getDemoDefaultState();
-
-  if (path.includes('/app/api/timezone')) {
-    const updated = { ...currentState, timezone_name: body?.timezone || 'Europe/Moscow', timezone_valid: true };
-    return { ok: true, data: { timezone_name: body?.timezone, timezone_valid: true }, nextState: updated };
-  }
-
-  if (path.includes('/app/api/addon/config')) {
-    return { ok: true, data: currentState.addon_config, nextState: currentState };
-  }
-
-  if (path.includes('/app/api/promo-activation-pause')) {
-    const aid = body?.account_id;
-    const paused = !!body?.paused;
-    const accounts = (currentState.accounts || []).map((a: any) => 
-      String(a.account_id) === String(aid) ? { ...a, promo_activation_paused: paused } : a
-    );
-    const updated = { ...currentState, accounts };
-    return { ok: true, nextState: updated };
-  }
-
-  if (path.includes('/app/api/promo-activation-mode')) {
-    const aid = body?.account_id;
-    const mode = body?.mode || 'server';
-    const accounts = (currentState.accounts || []).map((a: any) => 
-      String(a.account_id) === String(aid) ? { ...a, promo_activation_mode: mode, effective_ping_source: mode } : a
-    );
-    const updated = { ...currentState, accounts };
-    return { ok: true, nextState: updated };
-  }
-
-  if (path.includes('/app/api/proxy/manual')) {
-    const aid = body?.account_id;
-    const accounts = (currentState.accounts || []).map((a: any) => 
-      String(a.account_id) === String(aid) ? { 
-        ...a, 
-        proxy_ip: body?.host, 
-        proxy_port_socks5: String(body?.port), 
-        proxy_login: body?.login, 
-        proxy_password: body?.password,
-        effective_ping_ms: 45 + Math.random() * 30
-      } : a
-    );
-    const updated = { ...currentState, proxy_set: true, accounts };
-    return { ok: true, nextState: updated };
-  }
-
-  if (path.includes('/app/api/chat-ai/settings')) {
-    const aid = body?.account_id;
-    const accounts = (currentState.accounts || []).map((a: any) => 
-      String(a.account_id) === String(aid) ? { ...a, ...body } : a
-    );
-    const updated = { ...currentState, accounts };
-    return { ok: true, nextState: updated };
-  }
-
-  if (path.includes('/app/api/tariff/invoice')) {
-    const key = body?.tariff_key;
-    const tariff = (currentState.tariffs || []).find((t: any) => String(t.tariff_id) === String(key)) || (currentState.tariffs || [])[0];
-    const inv = {
-      invoice_id: "inv_demo_" + Math.floor(Math.random() * 100000),
-      invoice_label: tariff?.label || "ZOOMA Premium (30 дней)",
-      pay_url: "https://t.me/saxarok322",
-      price_rub: tariff?.price_rub || 450,
-      price_usdt: tariff?.price_usdt || 5.0,
-      expires_at_ts: Math.floor(Date.now() / 1000) + 900,
-      is_addon: false
-    };
-    const updated = { ...currentState, pending_invoice: inv };
-    return { ok: true, data: inv, nextState: updated };
-  }
-
-  if (path.includes('/app/api/addon/invoice')) {
-    const key = body?.tariff_key;
-    const tariff = (currentState.addon_config?.tariffs_addon || []).find((t: any) => String(t.key) === String(key)) || (currentState.addon_config?.tariffs_addon || [])[0];
-    const inv = {
-      invoice_id: "inv_demo_" + Math.floor(Math.random() * 100000),
-      invoice_label: `ZOOMA Addon: ${tariff?.label || "Слот 30 дней"}`,
-      pay_url: "https://t.me/saxarok322",
-      price_rub: tariff?.price_rub || 250,
-      price_usdt: tariff?.price_usdt || 2.8,
-      expires_at_ts: Math.floor(Date.now() / 1000) + 900,
-      is_addon: true
-    };
-    const updated = { ...currentState, pending_invoice: inv };
-    return { ok: true, data: inv, nextState: updated };
-  }
-
-  if (path.includes('/app/api/tariff/invoice/cancel')) {
-    const updated = { ...currentState, pending_invoice: null };
-    return { ok: true, nextState: updated };
-  }
-
-  if (path.includes('/app/api/account/reset-casino-data')) {
-    return { ok: true, nextState: currentState };
-  }
-
-  if (path.includes('/app/api/extension-unbind')) {
-    const aid = body?.account_id;
-    const accounts = (currentState.accounts || []).map((a: any) => 
-      String(a.account_id) === String(aid) ? { ...a, auth_status: 'не подключен', port_user_id: '', port_user_name: '' } : a
-    );
-    const updated = { ...currentState, accounts };
-    return { ok: true, nextState: updated };
-  }
-
-  if (path.includes('/app/api/extension-reload')) {
-    return { ok: true, nextState: currentState };
-  }
-
-  if (path.includes('/app/api/account/connect-prompt')) {
-    return { ok: true, nextState: currentState };
-  }
-
-  return { ok: true, nextState: currentState };
-};
+import {getTelegramWebApp} from '@/lib/telegram';
+import {requestZooma} from '@/lib/zooma-api';
+import {buildZoomaWebSocketUrl, isZoomaWebSocketHealthy} from '@/lib/zooma-websocket';
 
 export default function TelegramMiniApp() {
   const [mounted, setMounted] = useState(false);
   const [appState, setAppState] = useState<any>(null);
   const [loadingComplete, setLoadingComplete] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [bootError, setBootError] = useState('');
   const [activeTab, setActiveTab] = useState<'profile' | 'accounts' | 'tariffs'>(() => {
     if (typeof window !== 'undefined') {
       const savedTab = localStorage.getItem('zooma_app_tab_v1') as any;
@@ -250,12 +31,6 @@ export default function TelegramMiniApp() {
     return 'main';
   });
   const [addonConfig, setAddonConfig] = useState<any>({ tariffs_addon: [], accounts: [] });
-  const [selectedBg, setSelectedBg] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('zooma_bg_theme_v1') || 'space-blue';
-    }
-    return 'space-blue';
-  });
 
   const backgroundThemes = [
     {
@@ -285,16 +60,6 @@ export default function TelegramMiniApp() {
 
   const currentTheme = backgroundThemes[0];
 
-  const handleBgChange = (bgId: string) => {
-    // Left as a stub since themes are no longer switchable
-  };
-
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return !(window as any).Telegram?.WebApp?.initData;
-    }
-    return false;
-  });
 
   // Impurity and rendering state (React pure rules)
   const [currentTime, setCurrentTime] = useState<number>(() => Math.floor(Date.now() / 1000));
@@ -409,16 +174,8 @@ export default function TelegramMiniApp() {
     return () => clearInterval(interval);
   }, []);
 
-  // Telegram helper
-  const getTg = () => {
-    if (typeof window !== 'undefined') {
-      return (window as any).Telegram?.WebApp || {
-        initData: "", ready() {}, expand() {}, close() {},
-        openTelegramLink(url: string) { window.location.href = url; }
-      };
-    }
-    return { initData: "", ready() {}, expand() {}, close() {}, openTelegramLink() {} };
-  };
+  // Telegram adapter
+  const getTg = getTelegramWebApp;
 
   // Toast notifier
   const showToast = (text: string, type: 'info' | 'ok' | 'err' = 'info', duration = 2600) => {
@@ -427,38 +184,9 @@ export default function TelegramMiniApp() {
     toastTimerRef.current = setTimeout(() => setToast(null), duration);
   };
 
-  // API handler
-  const api = async (path: string, method = 'GET', body: any = null) => {
-    const tg = getTg();
-    const initData = tg.initData || '';
-    if (!initData) {
-      return new Promise<any>((resolve, reject) => {
-        setTimeout(() => {
-          try {
-            const res = handleDemoApiCall(appState, path, method, body);
-            if (res.nextState) {
-              setAppState(res.nextState);
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('zooma_app_mock_state_v1', JSON.stringify(res.nextState));
-              }
-            }
-            resolve(res);
-          } catch (e) {
-            reject(e);
-          }
-        }, 150);
-      });
-    }
-    const url = `${path}${path.includes('?') ? '&' : '?'}init_data=${encodeURIComponent(initData)}`;
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: body ? JSON.stringify(body) : null
-    });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.detail || json.message || json.error || 'request_failed');
-    return json;
-  };
+  // Real FastAPI client. There is intentionally no demo or mock fallback.
+  const api = async (path: string, method = 'GET', body: any = null) =>
+    requestZooma(path, {method: method as any, body});
 
   // Timezone Sync
   const syncTimezone = async () => {
@@ -594,10 +322,7 @@ export default function TelegramMiniApp() {
     if (wsRef.current) {
       try { wsRef.current.close(); } catch (_) {}
     }
-    const tg = getTg();
-    const initData = tg.initData || '';
-    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const url = `${proto}://${window.location.host}/app/ws?init_data=${encodeURIComponent(initData)}`;
+    const url = buildZoomaWebSocketUrl('/app/ws');
     
     const ws = new WebSocket(url);
     wsRef.current = ws;
@@ -634,7 +359,7 @@ export default function TelegramMiniApp() {
     };
   }
 
-  const wsIsHealthy = () => wsRef.current && wsRef.current.readyState === WebSocket.OPEN && (currentTime * 1000 - wsLastMessageTsRef.current) < 20000;
+  const wsIsHealthy = () => isZoomaWebSocketHealthy(wsRef.current, wsLastMessageTsRef.current);
 
   const refreshState = async (force = false) => {
     if (stateRefreshBusyRef.current || document.hidden) return;
@@ -667,44 +392,41 @@ export default function TelegramMiniApp() {
   };
 
   async function fetchInitialState() {
-    const tg = getTg();
-    const isDemo = !tg.initData;
-
-    if (isDemo) {
-      let defaultState: any = null;
-      if (typeof window !== 'undefined') {
-        const savedMock = localStorage.getItem('zooma_app_mock_state_v1');
-        if (savedMock) {
-          try { defaultState = JSON.parse(savedMock); } catch (_) {}
-        }
-      }
-      if (!defaultState) {
-        defaultState = getDemoDefaultState();
-      }
-      setAppState(defaultState);
-      setAddonConfig(defaultState.addon_config);
-      return;
-    }
-
     try {
+      const tg = getTg();
+      if (!tg.initData) {
+        throw new Error('Откройте этот кабинет из Telegram-бота ZOOMA.');
+      }
+
       const res = await api('/app/api/state');
       applySnapshotState(res.data, false);
+      setBootError('');
+
       await syncTimezone();
       if (!res.data?.addon_config) await loadAddonConfig(true);
       else setAddonConfig(res.data.addon_config);
-      
-      // Hydrate saved invoice
+
       const savedStr = localStorage.getItem('zooma_app_invoice_v1');
       if (savedStr && !res.data?.pending_invoice) {
-        const saved = JSON.parse(savedStr);
-        if (saved && Number(saved.chat_id || 0) === Number(res.data?.chat_id || 0) && saved.invoice) {
-          const inv = normalizeInvoice(saved.invoice);
-          if (inv) {
-            setAppState((prev: any) => prev ? { ...prev, pending_invoice: inv } : { ...res.data, pending_invoice: inv });
+        try {
+          const saved = JSON.parse(savedStr);
+          if (saved && Number(saved.chat_id || 0) === Number(res.data?.chat_id || 0) && saved.invoice) {
+            const inv = normalizeInvoice(saved.invoice);
+            if (inv) {
+              setAppState((prev: any) => prev
+                ? {...prev, pending_invoice: inv}
+                : {...res.data, pending_invoice: inv});
+            }
           }
+        } catch (_) {
+          localStorage.removeItem('zooma_app_invoice_v1');
         }
       }
-    } catch (_) {}
+    } catch (error: any) {
+      setAppState(null);
+      setBootError(error?.message || 'Не удалось загрузить кабинет.');
+      setLoadingComplete(true);
+    }
   }
 
   // Loading step sequence effect
@@ -726,16 +448,29 @@ export default function TelegramMiniApp() {
 
   // Mounting & initial boot
   useEffect(() => {
-    Promise.resolve().then(() => {
-      setMounted(true);
-      fetchInitialState();
-    });
+    setMounted(true);
     const tg = getTg();
     try { tg.ready(); tg.expand(); } catch (_) {}
 
-    wsConnect();
+    let refreshTimer = 0;
+    void (async () => {
+      await fetchInitialState();
+      if (tg.initData) {
+        wsConnect();
+        refreshTimer = window.setInterval(() => {
+          void refreshState(false);
+        }, 5000);
+      }
+    })();
+
+    const handleVisibility = () => {
+      if (!document.hidden && tg.initData) void refreshState(true);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
+      if (refreshTimer) window.clearInterval(refreshTimer);
+      document.removeEventListener('visibilitychange', handleVisibility);
       if (wsTimerRef.current) clearInterval(wsTimerRef.current);
       if (wsReconnectTimerRef.current) clearTimeout(wsReconnectTimerRef.current);
       if (wsRef.current) wsRef.current.close();
@@ -1349,9 +1084,9 @@ export default function TelegramMiniApp() {
       <div className="min-h-screen bg-[#050914] flex items-center justify-center p-6 text-center">
         <div className="max-w-xs space-y-4 premium-card p-6 rounded-2xl">
           <AlertCircle className="w-10 h-10 mx-auto text-rose-500" />
-          <h2 className="text-md font-bold text-slate-200">Доступ ограничен</h2>
+          <h2 className="text-md font-bold text-slate-200">Не удалось открыть кабинет</h2>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Пожалуйста, откройте этот личный кабинет внутри Telegram бота ZOOMA.
+            {bootError || 'Пожалуйста, откройте этот личный кабинет внутри Telegram-бота ZOOMA.'}
           </p>
         </div>
       </div>
