@@ -35,14 +35,6 @@ jobs:
       - name: Remove demo layer
         run: npm run prepare:production
 
-      - name: Type check
-        run: npm run typecheck
-
-      - name: Build static frontend
-        env:
-          NEXT_PUBLIC_BASE_PATH: /app
-        run: npm run build
-
       - name: Persist migrated source and lockfile
         if: github.event_name == 'push' && github.actor != 'github-actions[bot]'
         run: |
@@ -53,6 +45,14 @@ jobs:
             git commit -m "Apply production API migration [skip ci]"
             git push
           fi
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build static frontend
+        env:
+          NEXT_PUBLIC_BASE_PATH: /app
+        run: npm run build
 
       - name: Upload FastAPI-ready frontend
         uses: actions/upload-artifact@v4
