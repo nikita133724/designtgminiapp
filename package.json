@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "prepare:production": "node scripts/prepare-production.mjs",
+    "build": "npm run prepare:production && next build && npm run verify:export",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "verify:export": "node scripts/verify-export.mjs",
     "clean": "rm -rf .next out"
   },
   "dependencies": {
