@@ -1,21 +1,19 @@
-import {defineConfig, globalIgnores} from 'eslint/config';
-import nextVitals from 'eslint-config-next/core-web-vitals.js';
-import nextTypeScript from 'eslint-config-next/typescript.js';
+import {FlatCompat} from '@eslint/eslintrc';
 
-export default defineConfig([
-  ...nextVitals,
-  ...nextTypeScript,
-  {
+const compat = new FlatCompat({
+  baseDirectory: import.meta.dirname,
+});
+
+export default [
+  ...compat.config({
+    extends: ['next/core-web-vitals', 'next/typescript'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', {argsIgnorePattern: '^_'}],
       'react-hooks/exhaustive-deps': 'warn',
     },
+  }),
+  {
+    ignores: ['.next/**', 'out/**', 'build/**', 'next-env.d.ts'],
   },
-  globalIgnores([
-    '.next/**',
-    'out/**',
-    'build/**',
-    'next-env.d.ts',
-  ]),
-]);
+];
