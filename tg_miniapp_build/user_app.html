@@ -1,0 +1,1557 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>ZOOMA Client — Telegram Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            zooma: {
+              bg: '#070c18',
+              card: '#0f172a',
+              cardHover: '#131f38',
+              border: 'rgba(30, 41, 59, 0.8)',
+              accent: '#38bdf8',
+              accentHover: '#0284c7',
+              success: '#22c55e',
+              warning: '#f59e0b',
+              danger: '#ef4444',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg: #070c18;
+      --card: #0f172a;
+      --card-hover: #131f38;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --line: rgba(51, 65, 85, 0.7);
+    }
+    
+    html, body {
+      height: 100%;
+      background: #070c18 !important;
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+    
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 450px at 50% -100px, #1e293b 0%, #0f172a 45%, #070c18 100%) !important;
+    }
+
+    .wrap {
+      padding: 76px 12px 24px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* Glassmorphism Card */
+    .card {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.65) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 13.5px;
+      margin: 8px 0;
+    }
+
+    /* iOS Switch */
+    .ios-switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 26px;
+      flex: 0 0 auto;
+    }
+
+    .ios-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .ios-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #334155;
+      border-radius: 999px;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ios-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 2px;
+      top: 2px;
+      background: #ffffff;
+      border-radius: 50%;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    .ios-switch input:checked + .ios-slider {
+      background: #0284c7;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .ios-switch input:checked + .ios-slider:before {
+      transform: translateX(20px);
+    }
+
+    .ios-switch input:disabled + .ios-slider {
+      cursor: wait;
+      opacity: 0.5;
+    }
+
+    /* Promo Stats Grid */
+    .promo-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .promo-stat {
+      margin-bottom: 0;
+      text-align: center;
+      padding: 14px 10px;
+    }
+
+    .promo-stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .promo-stat-value {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #f1f5f9;
+      transition: all 0.3s ease;
+    }
+
+    .promo-stat.flash .promo-stat-value {
+      color: #38bdf8;
+      text-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+      transform: scale(1.06);
+    }
+
+    .m {
+      color: var(--muted);
+    }
+
+    /* Buttons */
+    .btn {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-support {
+      width: 100%;
+      margin-top: 10px;
+      background: linear-gradient(180deg, #0369a1 0%, #075985 100%);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 10px;
+      font-size: 13px;
+      border-radius: 12px;
+    }
+
+    .btnp {
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      color: #ffffff;
+    }
+
+    .btn-connect {
+      width: 100%;
+      padding: 10px;
+      font-size: 13px;
+      border-radius: 12px;
+    }
+
+    .btn-proxy-toggle {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      margin-top: 8px;
+    }
+
+    .btn-save-proxy {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      border-radius: 10px;
+    }
+
+    /* Fixed Navigation Header */
+    .tabs {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      background: rgba(7, 12, 24, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 40;
+      padding: 8px 12px;
+    }
+
+    .tabs-inner {
+      max-width: 520px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 3px;
+    }
+
+    .tab {
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .tab.a {
+      color: #ffffff;
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .proxy-box {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .proxy-hint {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .b-ok {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .b-warn {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .sub-frozen {
+      color: #fbbf24;
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    }
+
+    .b-no {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .account-title {
+      font-size: 11px;
+      color: #7dd3fc;
+      font-weight: 800;
+      margin-bottom: 8px;
+      padding: 2px 10px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 999px;
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.12);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .auth-combo {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .casino-id-chip {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: #bae6fd;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .tariff-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 3px;
+      margin-bottom: 12px;
+    }
+
+    .tariff-tab {
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tariff-tab.a {
+      color: #ffffff;
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+    }
+
+    .tariff-empty {
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .tariff {
+      position: relative;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .tariff-head, .tariff-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+    }
+
+    .tariff-head {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .tariff .name {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tariff .price {
+      font-size: 20px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+    }
+
+    .tariff .meta {
+      font-size: 12.5px;
+      color: #94a3b8;
+    }
+
+    .tariff .buy {
+      min-width: 80px;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      border: 1px solid rgba(186, 230, 253, 0.4);
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .inv-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .inv-actions .btn {
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .btn-cancel {
+      width: 100%;
+      margin-top: 10px;
+      background: linear-gradient(180deg, #881337 0%, #4c0519 100%);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+    }
+
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: #020617;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      color: #f8fafc;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+
+    .toast {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      top: 62px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: #0f172a;
+      font-size: 13px;
+      font-weight: 700;
+      display: none;
+      z-index: 100;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+      max-width: 496px;
+      margin: 0 auto;
+    }
+
+    .toast.ok {
+      background: linear-gradient(180deg, #064e3b 0%, #022c22 100%);
+      border-color: rgba(52, 211, 153, 0.5);
+      color: #a7f3d0;
+    }
+
+    .toast.err {
+      background: linear-gradient(180deg, #881337 0%, #4c0519 100%);
+      border-color: rgba(251, 113, 133, 0.5);
+      color: #fecdd3;
+    }
+
+    .toast.info {
+      background: linear-gradient(180deg, #0f172a 0%, #0284c7 100%);
+      border-color: rgba(56, 189, 248, 0.5);
+      color: #e0f2fe;
+    }
+
+    /* Modal Backdrop */
+    .addon-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 90;
+      padding: 16px;
+    }
+
+    .addon-modal {
+      width: min(94vw, 440px);
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+
+    .addon-modal h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .addon-summary {
+      font-size: 13px;
+      color: #e2e8f0;
+      line-height: 1.5;
+      background: rgba(2, 6, 23, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    .addon-select {
+      width: 100%;
+      height: 42px;
+      box-sizing: border-box;
+      background: #020617;
+      border: 1px solid #334155;
+      color: #fff;
+      border-radius: 10px;
+      padding: 0 10px;
+      font-size: 13px;
+    }
+
+    .addon-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    /* Chat AI styling */
+    .chat-ai-box {
+      margin-top: 12px;
+    }
+
+    .chat-ai-settings {
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      margin-top: 12px;
+    }
+
+    .chat-ai-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .chat-ai-grid input, .chat-ai-key {
+      width: 100%;
+      height: 40px;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      border-radius: 10px;
+      background: #020617;
+      color: #f8fafc;
+      padding: 0 10px;
+    }
+
+    .chat-ai-recent {
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 10px;
+    }
+
+    .chat-ai-save {
+      margin-top: 10px;
+    }
+
+    .chat-ai-rain-miss {
+      width: 100%;
+      min-height: 44px;
+      max-height: 120px;
+      box-sizing: border-box;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      border-radius: 10px;
+      background: #020617;
+      color: #f8fafc;
+      padding: 10px;
+      font: inherit;
+      font-size: 13px;
+      line-height: 1.45;
+      resize: vertical;
+    }
+
+    .chat-ai-miss-hint {
+      font-size: 11px;
+      line-height: 1.35;
+      margin: 10px 0 6px;
+    }
+
+    .chat-ai-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .chat-ai-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-ai-collapse {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .chat-ai-substatus {
+      display: inline-block;
+      margin-top: 3px;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .chat-ai-status {
+      margin-top: 8px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .account-promo {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-reset-account {
+      width: 100%;
+      margin-top: 8px;
+      background: linear-gradient(180deg, #881337 0%, #4c0519 100%);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+    }
+
+    .reset-actions .btn {
+      width: 100%;
+      height: 44px;
+      margin-top: 0;
+    }
+
+    @media (max-width: 759px) {
+      body.chat-ai-keyboard-open .wrap {
+        padding-bottom: var(--chat-ai-keyboard-gap, 45vh);
+      }
+      body.chat-ai-keyboard-open .chat-ai-box.chat-ai-focus-card {
+        position: relative;
+        z-index: 5;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="wrap">
+  <div id="view-profile"></div>
+  <div id="view-accounts" style="display:none"></div>
+  <div id="view-tariffs" style="display:none"></div>
+</div>
+
+<!-- Navigation Header -->
+<div class="tabs">
+  <div class="tabs-inner">
+    <div class="tab a" data-v="profile">Профиль</div>
+    <div class="tab" data-v="accounts">Аккаунты</div>
+    <div class="tab" data-v="tariffs">Тарифы</div>
+  </div>
+</div>
+
+<!-- Addon Purchase Modal -->
+<div class="addon-modal-backdrop" id="addonBuyModal">
+  <div class="addon-modal">
+    <h3>Доп. аккаунт</h3>
+    <div id="addonTariffInfo" class="m"></div>
+    <div style="height:8px"></div>
+    <select id="addonAccountSelect" class="addon-select"></select>
+    <div id="addonBuySummary" class="addon-summary"></div>
+    <div class="addon-actions">
+      <button class="btn btnp" id="addonConfirmBtn">Купить</button>
+      <button class="btn" id="addonCancelBtn">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- Extension Unbind Modal -->
+<div class="addon-modal-backdrop" id="unbindConfirmModal">
+  <div class="addon-modal">
+    <h3>Отвязать расширение?</h3>
+    <div class="m" style="margin-top:8px; font-size:13px; line-height:1.4">Расширение будет отвязано от этого браузера. Вы сможете привязать его заново.</div>
+    <div class="addon-actions">
+      <button class="btn btnp" onclick="confirmUnbindExtension()">Да, отвязать</button>
+      <button class="btn" onclick="closeUnbindConfirm()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Casino Data Confirm Modal -->
+<div class="addon-modal-backdrop" id="resetAccountConfirmModal">
+  <div class="addon-modal">
+    <h3>Очистить данные аккаунта?</h3>
+    <div id="resetAccountConfirmText" class="addon-summary"></div>
+    <div class="addon-actions reset-actions">
+      <button class="btn btn-cancel" onclick="confirmResetAccount()">Очистить</button>
+      <button class="btn" onclick="closeResetAccountConfirm()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp || {
+  initData: "",
+  ready() {},
+  expand() {},
+  close() {},
+  openTelegramLink(url) { window.location.href = url; }
+};
+
+try { tg.ready(); tg.expand(); } catch(_) {}
+
+const initData = tg.initData || "";
+let state = null, ws = null, wsTimer = null, wsReconnectTimer = null;
+let lastInvoice = null, countdownTimer = null, stateRefreshTimer = null, stateRefreshBusy = false;
+let activeTab = 'profile', wsLastMessageTs = 0;
+let pendingUnbindAccountId = '', pendingResetAccountId = '';
+
+const proxyOpen = {};
+const proxyDrafts = {};
+let tariffType = localStorage.getItem('zooma_app_tariff_type_v1') || 'main';
+let addonConfig = { tariffs_addon: [], accounts: [] };
+let selectedAddonTariff = null;
+let promoStatsFlashUntil = 0, promoStatsFlashTimer = null;
+
+const chatAiSetupOpen = {};
+const chatAiPanelOpen = {};
+const chatAiDrafts = {};
+const pendingToggleOps = new Map();
+
+function toggleOpBusy(key) { return pendingToggleOps.has(String(key || '')); }
+function beginToggleOp(key) {
+  const k = String(key || '');
+  if (!k || pendingToggleOps.has(k)) return false;
+  const timer = setTimeout(() => {
+    pendingToggleOps.delete(k);
+    refreshState(true).finally(() => { renderProfile(); renderAccounts(); });
+  }, 15000);
+  pendingToggleOps.set(k, timer);
+  return true;
+}
+function endToggleOp(key) {
+  const k = String(key || '');
+  const timer = pendingToggleOps.get(k);
+  if (timer) clearTimeout(timer);
+  pendingToggleOps.delete(k);
+}
+
+const $ = s => document.querySelector(s);
+let toastTimer = null;
+
+function toast(t, type = 'info', ms = null) {
+  const x = $('#toast');
+  if (!x) return;
+  if (toastTimer) clearTimeout(toastTimer);
+  const cls = (type === true ? 'err' : type || 'info');
+  x.textContent = t;
+  x.className = 'toast ' + cls;
+  x.style.display = 'block';
+  x.onclick = () => { if (toastTimer) clearTimeout(toastTimer); x.style.display = 'none'; };
+  toastTimer = setTimeout(() => x.style.display = 'none', ms ?? (cls === 'err' ? 5000 : 2600));
+}
+
+const store = {
+  kTab: 'zooma_app_tab_v1',
+  kInv: 'zooma_app_invoice_v1',
+  setTab(v) { localStorage.setItem(this.kTab, v || 'profile'); },
+  getTab() { return localStorage.getItem(this.kTab) || 'profile'; },
+  setInv(chatId, inv) { localStorage.setItem(this.kInv, JSON.stringify({ chat_id: Number(chatId || 0), invoice: inv || null })); },
+  getInv() { try { return JSON.parse(localStorage.getItem(this.kInv) || 'null'); } catch(_) { return null; } },
+  clearInv() { localStorage.removeItem(this.kInv); }
+};
+
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
+}
+
+function promoStatsFlashClass() {
+  return Date.now() < promoStatsFlashUntil ? 'flash' : '';
+}
+
+function jsonEq(a, b) {
+  try { return JSON.stringify(a) === JSON.stringify(b); } catch(_) { return false; }
+}
+
+function activeChatAiAccount(s = state) {
+  const list = Array.isArray(s?.accounts) ? s.accounts : [];
+  const aid = String(s?.active_account_id || 'acc_1');
+  return list.find(a => String(a?.account_id || '') === aid) || list[0] || null;
+}
+
+function chatAiRainMissPlainValue(value) {
+  return String(value || '').replace(/\u00a0/g, ' ');
+}
+
+function chatAiRainMissEditorValue(value) {
+  const items = chatAiRainMissPlainValue(value).split(';').map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  return items.map(x => x.replace(/ /g, '\u00a0')).join('; ');
+}
+
+function protectChatAiRainMissEditor(el) {
+  if (!el) return '';
+  const raw = String(el.value || ''), start = el.selectionStart, end = el.selectionEnd;
+  const next = raw.split(';').map(part => {
+    const match = part.match(/^\s*/);
+    const leading = match ? match[0] : '';
+    const body = part.slice(leading.length).replace(/\u00a0/g, ' ').replace(/ /g, '\u00a0');
+    return leading + body;
+  }).join(';');
+  if (next !== raw) {
+    el.value = next;
+    try { el.setSelectionRange(start, end); } catch(_) {}
+  }
+  return chatAiRainMissPlainValue(next);
+}
+
+function chatAiDraft(a) {
+  const aid = String(a?.account_id || 'acc_1');
+  const savedRain = (Array.isArray(a?.chat_ai_rain_miss_messages) ? a.chat_ai_rain_miss_messages : []).map(x => String(x || '').trim()).filter(Boolean).join('; ');
+  if (!chatAiDrafts[aid]) {
+    chatAiDrafts[aid] = {
+      key: '',
+      min: String(Math.round(Number(a?.chat_ai_interval_min_sec || 600) / 60)),
+      max: String(Math.round(Number(a?.chat_ai_interval_max_sec || 1500) / 60)),
+      rainMiss: savedRain,
+      dirty: false
+    };
+  } else if (!chatAiDrafts[aid].dirty) {
+    chatAiDrafts[aid].min = String(Math.round(Number(a?.chat_ai_interval_min_sec || 600) / 60));
+    chatAiDrafts[aid].max = String(Math.round(Number(a?.chat_ai_interval_max_sec || 1500) / 60));
+    chatAiDrafts[aid].rainMiss = savedRain;
+  }
+  return chatAiDrafts[aid];
+}
+
+function chatAiRecentHtml(a) {
+  const rows = Array.isArray(a?.chat_ai_recent_messages) ? a.chat_ai_recent_messages : [];
+  if (!rows.length) return `<div class='m chat-ai-recent'>Последних сообщений пока нет</div>`;
+  return `<div class='chat-ai-recent'><b>Последние сообщения</b>${rows.slice().reverse().map(x => `<div class='m'>${esc(fmtTs(x.sent_at_ts))} · ${esc(x.text || '')}</div>`).join('')}</div>`;
+}
+
+function chatAiPanelExpanded(aid) {
+  if (Object.prototype.hasOwnProperty.call(chatAiPanelOpen, aid)) return !!chatAiPanelOpen[aid];
+  const v = localStorage.getItem('zooma_chat_ai_open_' + aid);
+  chatAiPanelOpen[aid] = (v === '1');
+  return !!chatAiPanelOpen[aid];
+}
+
+function setChatAiPanelExpanded(aid, value) {
+  chatAiPanelOpen[aid] = !!value;
+  localStorage.setItem('zooma_chat_ai_open_' + aid, value ? '1' : '0');
+}
+
+function toggleChatAiPanel(aid) {
+  setChatAiPanelExpanded(String(aid || 'acc_1'), !chatAiPanelExpanded(String(aid || 'acc_1')));
+  renderProfile();
+}
+
+function chatAiBoxHtml() {
+  const a = activeChatAiAccount();
+  if (!a) return '';
+  const aid = String(a.account_id || 'acc_1'), enabled = !!a.chat_ai_enabled, setup = !!chatAiSetupOpen[aid], expanded = setup || chatAiPanelExpanded(aid), d = chatAiDraft(a), status = chatAiStatusText(a), toggleKey = `chat-ai:${aid}`, toggleBusy = toggleOpBusy(toggleKey);
+  const keyCount = Number(a.chat_ai_key_count || 0);
+  const keyPlaceholder = a.chat_ai_has_api_key ? ((keyCount > 1 ? keyCount + ' ключей сохранено' : a.chat_ai_api_key_masked) || 'API-ключ сохранён') : 'API-ключи Groq через пробел';
+  return `<div class='card chat-ai-box' data-chat-ai-card='${esc(aid)}'><div class='chat-ai-head'><span><b>Chat AI</b>${expanded ? '' : `<br><span id='chatAiHeaderStatus_${esc(aid)}' class='m chat-ai-substatus'>${esc(status)}</span>`}</span><span class='chat-ai-head-actions'><button class='chat-ai-collapse' type='button' aria-label='${expanded ? 'Свернуть' : 'Развернуть'}' onclick="toggleChatAiPanel('${esc(aid)}')">${expanded ? '▴' : '▾'}</button><label class='ios-switch'><input type='checkbox' ${enabled ? 'checked' : ''} ${toggleBusy ? 'disabled' : ''} onchange="toggleChatAi('${esc(aid)}',this.checked,this)"><span class='ios-slider'></span></label></span></div>${expanded ? `<div class='chat-ai-settings'><input id='chatAiKey_${esc(aid)}' class='chat-ai-key' type='password' autocomplete='off' placeholder='${esc(keyPlaceholder)}' value='${esc(d.key || '')}' oninput="chatAiChanged('${esc(aid)}')"><div style='height:8px'></div><div class='chat-ai-grid'><input id='chatAiMin_${esc(aid)}' type='number' min='1' value='${esc(d.min)}' oninput="chatAiChanged('${esc(aid)}')" placeholder='От, мин'><input id='chatAiMax_${esc(aid)}' type='number' min='1' value='${esc(d.max)}' oninput="chatAiChanged('${esc(aid)}')" placeholder='До, мин'></div><div class='chat-ai-miss-hint m'>Сообщения после дождя, если не выиграл. Разделяйте варианты символом ;</div><textarea id='chatAiRainMiss_${esc(aid)}' class='chat-ai-rain-miss' rows='2' wrap='soft' placeholder='Мимо; не повезло; эх' oninput="chatAiChanged('${esc(aid)}')">${esc(chatAiRainMissEditorValue(d.rainMiss || ''))}</textarea><div id='chatAiExpandedStatus_${esc(aid)}' class='m chat-ai-status'>${esc(status)}</div><button id='chatAiSave_${esc(aid)}' class='btn btnp chat-ai-save' style='display:${d.dirty || setup ? '' : 'none'}' onclick="saveChatAi('${esc(aid)}')">Сохранить</button>${chatAiRecentHtml(a)}</div>` : ''}</div>`;
+}
+
+function chatAiChanged(accountId) {
+  const a = activeChatAiAccount();
+  if (!a) return;
+  const aid = String(accountId || 'acc_1'), d = chatAiDraft(a);
+  d.key = String(document.getElementById('chatAiKey_' + aid)?.value || '');
+  d.min = String(document.getElementById('chatAiMin_' + aid)?.value || '');
+  d.max = String(document.getElementById('chatAiMax_' + aid)?.value || '');
+  d.rainMiss = protectChatAiRainMissEditor(document.getElementById('chatAiRainMiss_' + aid));
+  d.dirty = true;
+  const b = document.getElementById('chatAiSave_' + aid);
+  if (b) b.style.display = '';
+}
+
+async function toggleChatAi(accountId, enabled, input) {
+  const a = activeChatAiAccount();
+  const aid = String(accountId || 'acc_1');
+  if (enabled && !a?.chat_ai_has_api_key) {
+    if (input) input.checked = false;
+    chatAiSetupOpen[aid] = true;
+    setChatAiPanelExpanded(aid, true);
+    renderProfile();
+    return;
+  }
+  const op = `chat-ai:${aid}`;
+  if (!beginToggleOp(op)) {
+    if (input) input.checked = !enabled;
+    return;
+  }
+  renderProfile();
+  try {
+    await api('/app/api/chat-ai/settings', 'POST', { account_id: aid, enabled: !!enabled });
+    chatAiSetupOpen[aid] = false;
+    await refreshState(true);
+    toast(enabled ? 'Chat AI включён' : 'Chat AI выключен', 'ok');
+  } catch(e) {
+    await refreshState(true);
+    toast(e.message || 'Не удалось изменить Chat AI', 'err', 5000);
+  } finally {
+    endToggleOp(op);
+    renderProfile();
+  }
+}
+
+async function saveChatAi(accountId) {
+  const a = activeChatAiAccount(), aid = String(accountId || 'acc_1'), d = chatAiDraft(a);
+  const min = Math.max(1, parseInt(d.min || '10', 10) || 10), max = Math.max(1, parseInt(d.max || '25', 10) || 25);
+  if (min > max) { toast('Минимальный интервал больше максимального', 'err'); return; }
+  const body = { account_id: aid, interval_min_sec: min * 60, interval_max_sec: max * 60, rain_miss_messages: chatAiRainMissPlainValue(d.rainMiss || '') };
+  if (String(d.key || '').trim()) body.api_key = String(d.key).trim();
+  if (chatAiSetupOpen[aid]) body.enabled = true;
+  try {
+    await api('/app/api/chat-ai/settings', 'POST', body);
+    d.key = '';
+    d.dirty = false;
+    chatAiSetupOpen[aid] = false;
+    await refreshState(true);
+    toast('Настройки Chat AI сохранены', 'ok');
+  } catch(e) {
+    toast(e.message || 'Не удалось сохранить Chat AI', 'err', 5000);
+  }
+}
+
+function renderProfile() {
+  if (!state) return;
+  const frozen = !!state.subscription_paused;
+  const promoMonthLabel = String(state.promo_month_label || '').trim();
+  $('#view-profile').innerHTML = `<div class='card'><div class='row'><span class='m'>Пользователь</span><b>${esc(state.tg_username || '')}</b></div><div class='row'><span class='m'>chat_id</span><b>${state.chat_id}</b></div><div class='row'><span class='m'>Подписка</span><b>${subStatusHtml(state)}</b></div>${frozen ? `<div class='row'><span class='m'>Остаток</span><b class='sub-frozen'>${frozenLeftText(state.subscription_frozen_left_sec)}</b></div>` : `<div class='row'><span class='m'>Активна до</span><b>${fmtTs(state.subscription_until_ts)}</b></div>${tzLine(state.subscription_until_ts)}`}<div class='row'><span class='m'>Прокси</span><b>${state.proxy_set ? 'есть' : 'нет'}</b></div><div class='row'><span class='m'>${pingLabel(state)}</span><b>${pingHtml(state)}</b></div><button class='btn btn-support' onclick="openSupport()">Поддержка / Support</button></div><div class='promo-stats'><div class='card promo-stat ${promoStatsFlashClass()}'><div class='promo-stat-label'>Активировано промо</div><div class='promo-stat-value'>${Number(state.promo_activated_count || 0)}</div></div><div class='card promo-stat ${promoStatsFlashClass()}'><div class='promo-stat-label'>Сумма промо</div><div class='promo-stat-value'>${Number(state.promo_activated_total_amount || 0).toFixed(2)}</div><div class='promo-stat-label' style='margin-top:7px'>${esc(promoMonthLabel ? `За ${promoMonthLabel}` : 'За месяц')}: ${Number(state.promo_month_total_amount || 0).toFixed(2)}</div></div></div>${chatAiBoxHtml()}`;
+}
+
+function accountCardHtml(a) {
+  const aid = String(a.account_id || '');
+  const frozen = !!a.subscription_paused;
+  const mode = String(a.promo_activation_mode || 'server') === 'extension' ? 'extension' : 'server';
+  const bound = !!a.extension_bound_chat_id;
+  const promoEnabled = !a.promo_activation_paused;
+  const modeBusy = toggleOpBusy(`mode:${aid}`), promoBusy = toggleOpBusy(`promo:${aid}`);
+  const secondaryAction = mode === 'extension' 
+    ? `<button class='btn btn-proxy-toggle' onclick="reloadExtensionPage('${esc(aid)}')">Обновить страницу ПК</button>`
+    : `<button class='btn btn-proxy-toggle' onclick="toggleProxy('${esc(aid)}')">${proxyOpen[aid] ? 'Скрыть прокси' : 'Прокси'}</button>${proxyBox(a)}<button class='btn btn-reset-account' onclick="requestResetAccount('${esc(aid)}')">Сбросить данные аккаунта</button>`;
+
+  return `<div class='card' data-account-card='${esc(aid)}'>${Number(a.slot || 1) > 1 ? `<div class='account-title'>Доп. аккаунт ${a.slot}</div>` : ''}<div class='row'><span class='m'>Имя</span><span>${esc(a.port_user_name || '-')}</span></div><div class='row'><span class='m'>Авторизация</span><span>${authCombo(a)}</span></div><div class='row'><span><b>Режим активации</b><br><span class='m'>${mode === 'extension' ? 'Расширение' : 'Сервер'}</span></span><label class='ios-switch'><input type='checkbox' ${mode === 'extension' ? 'checked' : ''} ${modeBusy ? 'disabled' : ''} onchange="setActivationMode('${esc(aid)}',this.checked?'extension':'server',this)"><span class='ios-slider'></span></label></div><div class='row account-promo'><span><b>Активация промо</b></span><label class='ios-switch'><input type='checkbox' ${promoEnabled ? 'checked' : ''} ${promoBusy ? 'disabled' : ''} onchange="setAccountPromo('${esc(aid)}',this.checked,this)"><span class='ios-slider'></span></label></div>${frozen ? `<div class='row'><span class='m'>Подписка</span><span class='badge b-warn sub-frozen'>заморожен</span></div><div class='row'><span class='m'>Остаток</span><span class='sub-frozen'>${frozenLeftText(a.subscription_frozen_left_sec)}</span></div>` : `<div class='row'><span class='m'>Подписка до</span><span>${fmtTs(a.subscription_until_ts)}</span></div>`}<div class='row'><span class='m'>${pingLabel(a)}</span><span>${pingHtml(a)}</span></div>${bound ? `<button class='btn btn-cancel' onclick="requestUnbindExtension('${esc(aid)}')">Отвязать расширение</button>` : ''}${frozen ? `<div class='m tiny'>Аккаунт заморожен. Действия временно недоступны.</div>` : `<button class='btn btnp btn-connect' onclick="connectPrompt('${esc(aid)}')">Подключить / переподключить</button>${secondaryAction}`}</div>`;
+}
+
+function renderAccounts() {
+  captureProxyDrafts();
+  const list = state?.accounts || [];
+  $('#view-accounts').innerHTML = list.length ? list.map(accountCardHtml).join('') : `<div class='card'>Аккаунтов пока нет.</div>`;
+}
+
+function renderTariffsView() {
+  const inv = lastInvoice ? `<div class='card'><div><b>Счет ${esc(lastInvoice.invoice_label || ('#' + lastInvoice.invoice_id))}</b></div>${invoiceExtraHtml()}<div class='row'><span class='m'>Сумма</span><b>${Number(lastInvoice.price_rub || 0)} ₽ / ${Number(lastInvoice.price_usdt || 0).toFixed(2)} USDT</b></div><div class='row'><span class='m'>Время на оплату</span><b id='invoiceCountdown'>--:--</b></div><div style='height:8px'></div><div class='inv-actions'><button class='btn btnp' onclick="openPay()">Открыть оплату</button><button class='btn' onclick="copyPay()">Копировать ссылку</button></div><button class='btn btn-cancel' onclick="cancelInvoice()">Отмена оплаты</button></div>` : '';
+  $('#view-tariffs').innerHTML = inv + (lastInvoice ? '' : renderTariffsList());
+  updateCountdownOnly();
+}
+
+async function setAccountPromo(accountId, enabled, input) {
+  const aid = String(accountId || '');
+  const op = `promo:${aid}`;
+  if (!beginToggleOp(op)) { if (input) input.checked = !enabled; return; }
+  const acc = (state?.accounts || []).find(x => String(x.account_id || '') === aid);
+  const prev = !!acc?.promo_activation_paused;
+  if (acc) acc.promo_activation_paused = !enabled;
+  renderAccounts();
+  try {
+    const j = await api('/app/api/promo-activation-pause', 'POST', { account_id: aid, paused: !enabled });
+    if (acc) acc.promo_activation_paused = !!j.data?.promo_activation_paused;
+    toast(enabled ? 'Активация промо включена' : 'Активация промо на паузе', 'ok');
+  } catch(e) {
+    if (acc) acc.promo_activation_paused = prev;
+    toast(e.message || 'Не удалось сохранить паузу', 'err');
+  } finally {
+    endToggleOp(op);
+    renderAccounts();
+  }
+}
+
+async function setActivationMode(accountId, mode, input) {
+  const aid = String(accountId || '');
+  const op = `mode:${aid}`;
+  if (!beginToggleOp(op)) { if (input) input.checked = String(mode || 'server') !== 'extension'; return; }
+  renderAccounts();
+  try {
+    await api('/app/api/promo-activation-mode', 'POST', { account_id: aid, mode: String(mode || 'server') });
+    await refreshState(true);
+    toast(mode === 'extension' ? 'Включена работа через расширение' : 'Включена работа через сервер', 'ok');
+  } catch(e) {
+    await refreshState(true);
+    toast(e.message || 'Не удалось переключить режим', 'err', 5000);
+  } finally {
+    endToggleOp(op);
+    renderAccounts();
+  }
+}
+
+function requestResetAccount(accountId) {
+  pendingResetAccountId = String(accountId || '');
+  const acc = (state?.accounts || []).find(x => String(x.account_id || '') === pendingResetAccountId) || {};
+  const modal = document.getElementById('resetAccountConfirmModal'), info = document.getElementById('resetAccountConfirmText');
+  if (info) info.textContent = `Будут очищены данные казино и прокси слота #${Number(acc.slot || 1)}. Слот, подписка и настройки Chat AI останутся.`;
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeResetAccountConfirm() {
+  pendingResetAccountId = '';
+  const modal = document.getElementById('resetAccountConfirmModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function confirmResetAccount() {
+  const aid = pendingResetAccountId;
+  closeResetAccountConfirm();
+  if (!aid) return;
+  try {
+    await api('/app/api/account/reset-casino-data', 'POST', { account_id: aid });
+    delete proxyDrafts[aid];
+    proxyOpen[aid] = false;
+    await refreshState(true);
+    toast('Данные казино и прокси очищены', 'ok');
+  } catch(e) {
+    toast(e.message || 'Не удалось очистить данные аккаунта', 'err', 5000);
+  }
+}
+
+function requestUnbindExtension(accountId) {
+  pendingUnbindAccountId = String(accountId || '');
+  const modal = document.getElementById('unbindConfirmModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeUnbindConfirm() {
+  pendingUnbindAccountId = '';
+  const modal = document.getElementById('unbindConfirmModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function confirmUnbindExtension() {
+  const accountId = pendingUnbindAccountId;
+  closeUnbindConfirm();
+  if (accountId) await unbindExtension(accountId);
+}
+
+async function unbindExtension(accountId) {
+  try {
+    await api('/app/api/extension-unbind', 'POST', { account_id: String(accountId || '') });
+    await refreshState(true);
+    toast('Расширение отвязано', 'ok');
+  } catch(e) {
+    toast(e.message || 'Не удалось отвязать расширение', 'err', 5000);
+  }
+}
+
+async function reloadExtensionPage(accountId) {
+  try {
+    toast('Отправляем команду расширению...', 'info', 1800);
+    await api('/app/api/extension-reload', 'POST', { account_id: String(accountId || '') });
+    toast('Страница на ПК обновлена', 'ok');
+  } catch(e) {
+    toast(e.message || 'Не удалось обновить страницу ПК', 'err', 5000);
+  }
+}
+
+function renderAll() {
+  renderProfile();
+  renderAccounts();
+  renderTariffsView();
+}
+
+function applyServerState(nextState, flash = true) {
+  const oldCount = Number(state?.promo_activated_count || 0), oldTotal = Number(state?.promo_activated_total_amount || 0);
+  state = nextState || {};
+  applyLocalTimezoneToState();
+  syncAddonConfigFromState();
+  if (flash) maybeFlashPromo(oldCount, oldTotal, Number(state?.promo_activated_count || 0), Number(state?.promo_activated_total_amount || 0));
+}
+
+function applySnapshotState(nextState, flash = true) {
+  if (!state) {
+    applyServerState(nextState, flash);
+    syncInvoiceFromState();
+    if (!lastInvoice) hydrateSavedInvoice();
+    renderAll();
+    refreshAddonModalFromConfig();
+    return;
+  }
+  const prev = state;
+  const oldCount = Number(prev?.promo_activated_count || 0), oldTotal = Number(prev?.promo_activated_total_amount || 0);
+  const profileChanged = !jsonEq(profileSlice(prev), profileSlice(nextState));
+  const accountsChanged = !jsonEq(accountsSlice(prev), accountsSlice(nextState));
+  const promoChanged = !jsonEq(promoSlice(prev), promoSlice(nextState));
+  const tariffsChanged = !jsonEq(tariffsSlice(prev), tariffsSlice(nextState));
+  const invoiceChanged = !jsonEq(invoiceSlice(prev), invoiceSlice(nextState));
+  const addonChanged = !jsonEq(addonSlice(prev), addonSlice(nextState));
+
+  state = nextState || {};
+  applyLocalTimezoneToState();
+  syncAddonConfigFromState();
+  syncInvoiceFromState();
+
+  if (flash && promoChanged) maybeFlashPromo(oldCount, oldTotal, Number(state?.promo_activated_count || 0), Number(state?.promo_activated_total_amount || 0));
+  if (profileChanged || promoChanged || accountsChanged) renderProfile();
+  if (accountsChanged) renderAccounts();
+  if (tariffsChanged || invoiceChanged || addonChanged) renderTariffsView();
+  if (addonChanged) refreshAddonModalFromConfig();
+}
+
+function applyProfilePatch(data) {
+  state = state || {};
+  Object.assign(state, data || {});
+  applyLocalTimezoneToState();
+  renderProfile();
+}
+
+function applyAccountsPatch(data) {
+  state = state || {};
+  state.active_account_id = String(data?.active_account_id || state.active_account_id || '');
+  state.accounts = Array.isArray(data?.accounts) ? data.accounts : [];
+  renderAccounts();
+  renderProfile();
+}
+
+function applyAccountPatch(data) {
+  if (!state || !data) return;
+  const aid = String(data.account_id || '');
+  const list = Array.isArray(state.accounts) ? state.accounts : [];
+  const idx = list.findIndex(x => String(x.account_id || '') === aid);
+  if (idx >= 0) list[idx] = { ...list[idx], ...data };
+  else list.push(data);
+  state.accounts = list;
+  renderAccounts();
+  if (String(state.active_account_id || '') === aid) renderProfile();
+}
+
+function applyInvoicePatch(data) {
+  state = state || {};
+  state.pending_invoice = data?.pending_invoice ?? null;
+  syncInvoiceFromState();
+  renderTariffsView();
+}
+
+function applyPromoPatch(data) {
+  state = state || {};
+  const oldCount = Number(state?.promo_activated_count || 0), oldTotal = Number(state?.promo_activated_total_amount || 0);
+  Object.assign(state, data || {});
+  maybeFlashPromo(oldCount, oldTotal, Number(state?.promo_activated_count || 0), Number(state?.promo_activated_total_amount || 0));
+  renderProfile();
+}
+
+function applyTariffsPatch(data) {
+  state = state || {};
+  state.tariffs = Array.isArray(data?.tariffs) ? data.tariffs : [];
+  renderTariffsView();
+}
+
+function applyAddonConfigPatch(data) {
+  state = state || {};
+  state.addon_config = data?.addon_config || { tariffs_addon: [], accounts: [] };
+  syncAddonConfigFromState();
+  renderTariffsView();
+  refreshAddonModalFromConfig();
+}
+
+function applyWsPayload(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'bootstrap' || msg.type === 'state') { applySnapshotState(msg.data || {}, msg.type !== 'bootstrap'); return; }
+  if (msg.type === 'profile_patch') { applyProfilePatch(msg.data || {}); return; }
+  if (msg.type === 'accounts_patch') { applyAccountsPatch(msg.data || {}); return; }
+  if (msg.type === 'account_patch') { applyAccountPatch(msg.data || {}); return; }
+  if (msg.type === 'invoice_patch') { applyInvoicePatch(msg.data || {}); return; }
+  if (msg.type === 'promo_patch') { applyPromoPatch(msg.data || {}); return; }
+  if (msg.type === 'tariffs_patch') { applyTariffsPatch(msg.data || {}); return; }
+  if (msg.type === 'addon_config_patch') { applyAddonConfigPatch(msg.data || {}); return; }
+}
+
+function setTab(v) {
+  activeTab = (v || 'profile');
+  ['profile', 'accounts', 'tariffs'].forEach(k => { $('#view-' + k).style.display = (k === activeTab ? 'block' : 'none'); });
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('a', t.dataset.v === activeTab));
+  store.setTab(activeTab);
+}
+
+async function setTariffType(v) {
+  tariffType = v === 'addon' ? 'addon' : 'main';
+  localStorage.setItem('zooma_app_tariff_type_v1', tariffType);
+  if (tariffType === 'addon') await loadAddonConfig();
+  renderTariffsView();
+}
+
+function toggleProxy(accountId) {
+  captureProxyDrafts();
+  const aid = String(accountId || '');
+  proxyOpen[aid] = !proxyOpen[aid];
+  if (!proxyOpen[aid]) delete proxyDrafts[aid];
+  renderAccounts();
+}
+
+async function connectPrompt(accountId) {
+  try {
+    await api('/app/api/account/connect-prompt', 'POST', { account_id: accountId });
+    toast('Дальнейшие действия в боте сообщениями', 'info', 3500);
+    setTimeout(() => { try { tg.close(); } catch(_) {} }, 4000);
+  } catch(e) {
+    toast(e.message || 'Не удалось открыть авторизацию', 'err');
+  }
+}
+
+async function saveProxy(accountId) {
+  try {
+    const aid = String(accountId || '');
+    const draft = currentProxyDraft(aid) || {};
+    let host = String(draft.host || '').trim();
+    let port = parseInt(String(draft.port || '0').trim() || '0', 10);
+    let login = String(draft.login || '').trim();
+    let password = String(draft.password || '').trim();
+    const full = String(draft.full || '').trim();
+
+    if (full) {
+      const parsed = parseSocks5ProxyInput(full);
+      host = parsed.host; port = parsed.port; login = parsed.login; password = parsed.password;
+    }
+
+    if (!host || !port || !login || !password) throw new Error('Заполни SOCKS5 прокси: ip:port:login:password');
+
+    await api('/app/api/proxy/manual', 'POST', { account_id: aid, host, port, login, password });
+    proxyDrafts[aid] = { full: '', host, port: String(port), login, password };
+    toast('Прокси сохранён. Пинг обновится после проверки.', 'ok');
+    if (!wsIsHealthy()) setTimeout(() => refreshState(true), 700);
+  } catch(e) {
+    toast(e.message || 'Не удалось сохранить прокси', 'err', 5000);
+  }
+}
+
+async function buyTariff(key) {
+  try {
+    const j = await api('/app/api/tariff/invoice', 'POST', { tariff_key: key });
+    state = state || {};
+    state.pending_invoice = j.data || null;
+    syncInvoiceFromState();
+    renderTariffsView();
+    setTab('tariffs');
+    toast('Счёт создан', 'ok');
+  } catch(e) {
+    toast(e.message || 'Ошибка создания счёта', 'err', 5000);
+  }
+}
+
+async function createAddonInvoice() {
+  const btn = document.getElementById('addonConfirmBtn');
+  try {
+    const o = selectedAddonOption();
+    if (!selectedAddonTariff || !o) { toast('Выбери аккаунт', 'err'); return; }
+    if (btn) btn.disabled = true;
+    const j = await api('/app/api/addon/invoice', 'POST', { tariff_key: selectedAddonTariff.key, account_id: o.account_id });
+    state = state || {};
+    state.pending_invoice = j.data || null;
+    syncInvoiceFromState();
+    closeAddonModal();
+    renderTariffsView();
+    setTab('tariffs');
+    toast('Счёт создан', 'ok');
+    if (!wsIsHealthy()) setTimeout(() => refreshState(true), 700);
+  } catch(e) {
+    toast(e.message || 'Ошибка создания счёта', 'err', 5000);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function cancelInvoice() {
+  try {
+    const invId = String(lastInvoice?.invoice_id || '').trim();
+    await api('/app/api/tariff/invoice/cancel', 'POST', { invoice_id: invId || null });
+    state = state || {};
+    state.pending_invoice = null;
+    lastInvoice = null;
+    store.clearInv();
+    renderTariffsView();
+    setTab('tariffs');
+    toast('Оплата отменена', 'info');
+    if (!wsIsHealthy()) setTimeout(() => refreshState(true), 700);
+  } catch(e) {
+    toast(e.message || 'Не удалось отменить оплату', 'err', 5000);
+  }
+}
+
+function openSupport() {
+  const url = 'https://t.me/saxarok322';
+  try { tg.openTelegramLink(url); } catch(_) { try { window.location.href = url; } catch(__) {} }
+  setTimeout(() => { try { tg.close(); } catch(_) {} }, 120);
+}
+
+function openPay() {
+  if (!lastInvoice?.pay_url) { toast('Ссылка оплаты не найдена', 'err'); return; }
+  tg.openTelegramLink(lastInvoice.pay_url);
+}
+
+async function copyPay() {
+  try {
+    if (!lastInvoice?.pay_url) { toast('Ссылка оплаты не найдена', 'err'); return; }
+    await navigator.clipboard.writeText(lastInvoice.pay_url);
+    toast('Ссылка скопирована', 'ok');
+  } catch(_) {
+    toast('Не удалось скопировать', 'err');
+  }
+}
+
+function updateCountdownOnly() {
+  const el = $('#invoiceCountdown');
+  if (el && lastInvoice?.expires_at_ts) {
+    const left = Number(lastInvoice.expires_at_ts || 0) - Math.floor(Date.now() / 1000);
+    el.textContent = fmtCountdown(left);
+    if (left <= 0) {
+      lastInvoice = null;
+      store.clearInv();
+      if (state) state.pending_invoice = null;
+      renderTariffsView();
+    }
+  }
+  const a = activeChatAiAccount(), status = chatAiStatusText(a), aid = String(a?.account_id || 'acc_1');
+  const head = document.getElementById('chatAiHeaderStatus_' + aid), expanded = document.getElementById('chatAiExpandedStatus_' + aid);
+  if (head) head.textContent = status;
+  if (expanded) expanded.textContent = status;
+}
+
+function wsIsHealthy() {
+  return !!(ws && ws.readyState === WebSocket.OPEN && (Date.now() - wsLastMessageTs) < 20000);
+}
+
+async function refreshState(force = false) {
+  if (stateRefreshBusy || document.hidden) return;
+  if (!force && wsIsHealthy()) return;
+  stateRefreshBusy = true;
+  const hadInvoice = !!lastInvoice;
+  try {
+    const j = await api('/app/api/state');
+    applySnapshotState(j.data, true);
+    if (hadInvoice && !lastInvoice) toast('Состояние оплаты обновлено', 'ok');
+  } catch(_) {} finally {
+    stateRefreshBusy = false;
+  }
+}
+
+function wsConnect() {
+  if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+  if (ws) { try { ws.close(); } catch(_) {} ws = null; }
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/app/ws?init_data=${encodeURIComponent(initData)}`);
+  
+  ws.onopen = () => {
+    wsLastMessageTs = Date.now();
+    if (wsTimer) clearInterval(wsTimer);
+    wsTimer = setInterval(() => {
+      try { if (ws && ws.readyState === WebSocket.OPEN) ws.send('ping'); } catch(_) {}
+    }, 15000);
+  };
+  
+  ws.onmessage = (ev) => {
+    if (ev.data === 'pong') { wsLastMessageTs = Date.now(); return; }
+    try {
+      const m = JSON.parse(ev.data);
+      wsLastMessageTs = Date.now();
+      applyWsPayload(m);
+    } catch(_) {}
+  };
+  
+  ws.onclose = () => {
+    if (wsTimer) { clearInterval(wsTimer); wsTimer = null; }
+    wsReconnectTimer = setTimeout(wsConnect, 1200);
+  };
+  
+  ws.onerror = () => { try { ws && ws.close(); } catch(_) {} };
+}
+
+let chatAiFocusedCard = null, chatAiFocusTimer = null, chatAiViewportTimer = null;
+
+function chatAiMobileViewport() {
+  return window.matchMedia && window.matchMedia('(max-width:759px)').matches && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window);
+}
+
+function updateChatAiKeyboardGap() {
+  if (!chatAiMobileViewport()) return;
+  const vv = window.visualViewport;
+  const keyboardGap = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : Math.round(window.innerHeight * .45);
+  document.documentElement.style.setProperty('--chat-ai-keyboard-gap', `${Math.max(180, keyboardGap + 28)}px`);
+}
+
+function alignChatAiCardToNavigation() {
+  if (!chatAiMobileViewport() || !chatAiFocusedCard || !document.body.contains(chatAiFocusedCard)) return;
+  updateChatAiKeyboardGap();
+  const tabsBottom = document.querySelector('.tabs')?.getBoundingClientRect().bottom || 0;
+  const rect = chatAiFocusedCard.getBoundingClientRect();
+  const current = window.scrollY || document.documentElement.scrollTop || 0;
+  const target = Math.max(0, current + rect.top - tabsBottom - 8);
+  if (Math.abs(target - current) < 2) return;
+  window.scrollTo(0, target);
+}
+
+function scheduleChatAiCardAlignment(delay = 0) {
+  if (chatAiFocusTimer) clearTimeout(chatAiFocusTimer);
+  if (delay <= 0) { requestAnimationFrame(alignChatAiCardToNavigation); return; }
+  chatAiFocusTimer = setTimeout(() => requestAnimationFrame(alignChatAiCardToNavigation), delay);
+}
+
+document.addEventListener('focusin', e => {
+  const input = e.target?.closest?.('.chat-ai-box input:not([type="checkbox"]), .chat-ai-box textarea');
+  if (!input || !chatAiMobileViewport()) return;
+  const card = input.closest('.chat-ai-box');
+  if (chatAiFocusedCard && chatAiFocusedCard !== card) {
+    chatAiFocusedCard.classList.remove('chat-ai-focus-card');
+  }
+  chatAiFocusedCard = card;
+  chatAiFocusedCard.classList.add('chat-ai-focus-card');
+  document.body.classList.add('chat-ai-keyboard-open');
+  updateChatAiKeyboardGap();
+  scheduleChatAiCardAlignment(0);
+  scheduleChatAiCardAlignment(240);
+});
+
+document.addEventListener('focusout', e => {
+  if (!e.target?.closest?.('.chat-ai-box input:not([type="checkbox"]), .chat-ai-box textarea')) return;
+  if (chatAiFocusTimer) clearTimeout(chatAiFocusTimer);
+  chatAiFocusTimer = setTimeout(() => {
+    const active = document.activeElement?.closest?.('.chat-ai-box input:not([type="checkbox"]), .chat-ai-box textarea');
+    if (active) return;
+    if (chatAiFocusedCard) {
+      chatAiFocusedCard.classList.remove('chat-ai-focus-card');
+    }
+    chatAiFocusedCard = null;
+    document.body.classList.remove('chat-ai-keyboard-open');
+    document.documentElement.style.removeProperty('--chat-ai-keyboard-gap');
+  }, 180);
+});
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    if (!chatAiFocusedCard) return;
+    updateChatAiKeyboardGap();
+    if (chatAiViewportTimer) clearTimeout(chatAiViewportTimer);
+    chatAiViewportTimer = setTimeout(alignChatAiCardToNavigation, 90);
+  });
+}
+
+(async() => {
+  try {
+    const j = await api('/app/api/state');
+    applySnapshotState(j.data, false);
+    await syncTimezone();
+    if (!state?.addon_config) await loadAddonConfig(true);
+    if (!lastInvoice) hydrateSavedInvoice();
+    renderAll();
+    setTab(store.getTab());
+    wsConnect();
+  } catch(_) {
+    document.body.innerHTML = '<div class="wrap"><div class="card">Откройте этот кабинет только через Telegram.</div></div>';
+  }
+})();
+
+const addonCancelBtn = document.getElementById('addonCancelBtn');
+if (addonCancelBtn) addonCancelBtn.onclick = closeAddonModal;
+
+const addonConfirmBtn = document.getElementById('addonConfirmBtn');
+if (addonConfirmBtn) addonConfirmBtn.onclick = createAddonInvoice;
+
+const addonBuyModal = document.getElementById('addonBuyModal');
+if (addonBuyModal) addonBuyModal.addEventListener('click', e => { if (e.target === addonBuyModal) closeAddonModal(); });
+
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => setTab(t.dataset.v));
+
+if (countdownTimer) clearInterval(countdownTimer);
+countdownTimer = setInterval(updateCountdownOnly, 1000);
+
+if (stateRefreshTimer) clearInterval(stateRefreshTimer);
+stateRefreshTimer = setInterval(() => refreshState(false), 5000);
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshState(true); });
+</script>
+</body>
+</html>
