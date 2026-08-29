@@ -5,6 +5,42 @@
   --font-serif: var(--font-serif), serif;
 }
 
+:root {
+  color-scheme: dark;
+  background: #030612;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #030612;
+  overscroll-behavior-y: none;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
 .premium-card {
   background: rgba(14, 23, 42, 0.72) !important;
   backdrop-filter: blur(12px) !important;
@@ -24,33 +60,46 @@
 }
 
 @keyframes float-slow-1 {
-  0% { transform: translate(-50%, -50%) translate(0px, 0px) scale(1); }
+  0% { transform: translate(-50%, -50%) translate(0, 0) scale(1); }
   50% { transform: translate(-50%, -50%) translate(40px, -60px) scale(1.2); }
   100% { transform: translate(-50%, -50%) translate(-20px, 30px) scale(0.85); }
 }
 
 @keyframes float-slow-2 {
-  0% { transform: translate(-50%, -50%) translate(0px, 0px) scale(1.05); }
+  0% { transform: translate(-50%, -50%) translate(0, 0) scale(1.05); }
   50% { transform: translate(-50%, -50%) translate(-50px, 40px) scale(0.85); }
   100% { transform: translate(-50%, -50%) translate(30px, -20px) scale(1.15); }
 }
 
 @keyframes float-slow-3 {
-  0% { transform: translate(-50%, -50%) translate(0px, 0px) scale(0.95); }
+  0% { transform: translate(-50%, -50%) translate(0, 0) scale(0.95); }
   50% { transform: translate(-50%, -50%) translate(60px, 30px) scale(1.15); }
   100% { transform: translate(-50%, -50%) translate(-40px, -50px) scale(0.9); }
 }
 
-.animate-float-1 {
-  animation: float-slow-1 18s ease-in-out infinite alternate;
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-float-2 {
-  animation: float-slow-2 22s ease-in-out infinite alternate;
+.animate-float-1 { animation: float-slow-1 18s ease-in-out infinite alternate; }
+.animate-float-2 { animation: float-slow-2 22s ease-in-out infinite alternate; }
+.animate-float-3 { animation: float-slow-3 26s ease-in-out infinite alternate; }
+.animate-page-enter { animation: page-enter 220ms cubic-bezier(.2,.8,.2,1) both; }
+
+@media (max-width: 359px) {
+  .premium-card {
+    border-radius: 18px !important;
+  }
 }
 
-.animate-float-3 {
-  animation: float-slow-3 26s ease-in-out infinite alternate;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
-
-
